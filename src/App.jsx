@@ -1,45 +1,81 @@
+import Formulario from "./components/Formulario";
+import TodoItem from "./components/TodoItem";
+import { useEffect, useState } from "react";
 import "./App.css";
 
+const FILTER_MAP = {
+    All: () => true,
+    Active: (todo) => !todo.completed,
+    Completed: (todo) => todo.completed
+}
+
+const filterkeys = Object.keys(FILTER_MAP);
+
+const initialState = JSON.parse(localStorage.getItem("todos") || "[]");
+const filterInitialState = localStorage.getItem("filter") || "All";
+
 const App = () => {
+
+    const [todos, setTodos] = useState(initialState);
+    const [filter, setFilter] = useState(filterInitialState);
+
+    useEffect(() => {
+        localStorage.setItem("todos", JSON.stringify(todos));
+    }, [todos])
+
+    useEffect(() => {
+        localStorage.setItem("filter", filter);
+    }, [filter]);
+
+    const handleChangeCompletedTodo = (id) => {
+        const newTodos = todos.map(todo => {
+            if(todo.id === id) {
+                return {...todo, completed: !todo.completed};
+            }
+            return todo;
+        });
+        setTodos(newTodos);
+    }
+
+    const deleteTodo = (id) => {
+        const newTodos = todos.filter(todo => todo.id !== id);
+        setTodos(newTodos);
+    }
+
+    const editTodo = (id, todop) => {
+        const newTodos = todos.map(todoitem => {
+            if(todoitem.id === id) {
+                return {...todoitem, todo: todop }
+            }
+            return todoitem;
+        });
+        setTodos(newTodos);
+    }
 
     return (
         <main>
             <h1>todos app</h1>
             <h3>What needs to be done?</h3>
-            <form>
-                <input type="text" defaultValue="learn useContext" />
-                <button>Add</button>
-            </form>
+            <Formulario todos={todos} setTodos={setTodos} />
             <section id="filters">
-                <button>all tasks</button>
-                <button>active tasks</button>
-                <button>completed tasks</button>
+                {filterkeys.map(filterKey => (
+                    <button key={filterKey} onClick={() => setFilter(filterKey)}>{filterKey} tasks</button>
+                ))}
             </section>
             <section id="todo-list">
-                <div className="todo">
-                    <input id="todo-0" type="checkbox"/>
-                    <label htmlFor="todo-0">Learn useState</label>
-                    <div className="actions">
-                        <button>Edit</button>
-                        <button>Remove</button>
-                    </div>
-                </div>
-                <div className="todo">
-                        <input id="todo-1" type="checkbox"/>
-                        <label htmlFor="todo-1">Learn useEffect</label>
-                        <div className="actions">
-                            <button>Edit</button>
-                            <button>Remove</button>
-                        </div>
-                    </div>
-                <div className="todo">
-                    <input id="todo-2" type="checkbox"/>
-                    <label htmlFor="todo-2">Learn useReducer</label>
-                    <div className="actions">
-                        <button>Edit</button>
-                        <button>Remove</button>
-                    </div>
-                </div>
+                {todos.length > 0 ? todos.filter(FILTER_MAP[filter]).map(({ id, todo, completed}) => (
+                    <TodoItem
+                        key={id}
+                        id={id}
+                        todo={todo}
+                        completed={completed}
+                        handleChangeCompletedTodo={handleChangeCompletedTodo}
+                        deleteTodo={deleteTodo}
+                        editTodo={editTodo}
+                    />
+                )) : (
+                    <h3>Empty list</h3>
+                )}
             </section>
         </main>
     )
